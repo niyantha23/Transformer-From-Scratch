@@ -3,7 +3,7 @@ import torch.nn as nn
 import math
 
 
-class ImputEmbeddings(nn.Module):
+class InputEmbeddings(nn.Module):
     """
     Class to handle the InputEmbeddings, Covert the input sequence to vector embeddings
     """
@@ -195,6 +195,7 @@ class DecoderBlock(nn.Module):
         feed_forward: FeedForwardBlock,
         dropout: float,
     ):
+        super().__init__()
         self.self_attention = self_attention
         self.cross_attention = cross_attention
         self.feed_forward = feed_forward
@@ -226,3 +227,43 @@ class Decoder(nn.Module):
         for layer in self.layers:
             x = layer(x, encoder_output, src_mask, trgt_mask)
         return self.norm(x)
+
+
+class ProjectionLayer(nn.Module):
+
+    def __init__(self,d_model:int, vocab_size:int) -> None:
+        super().__init__()
+        self.proj=nn.Linear(d_model,vocab_size)
+    
+    def forward(self,x):
+        return torch.log_softmax(self.proj(x),dim=-1)
+
+class Transformer(nn.Module):
+    
+    def __init__(self,encoder:Encoder,decoder:Decoder,src_embed:InputEmbeddings,trgt_embed:InputEmbeddings,src_pos:PositionalEncoding,trgt_pos:PositionalEncoding,projection_layer:ProjectionLayer):
+        super().__init__()
+        self.encoder=encoder
+        self.decoder=decoder
+        self.src_embed=src_embed
+        self.trgt_embed=trgt_embed
+        self.src_pos=src_pos
+        self.trgt_pos=trgt_pos
+        self.projection_layer=projection_layer
+    
+    def encode(self, src, src_mask):
+        src=self.src_embed(src)
+        src=self.src_pos(src)
+        return self.encoder(src,src_mask)
+
+    def decode(self,encoder_output,src_mask,trgt,trgt_mask):
+        trgt=self.trgt_embed(trgt)
+        trgt=self.trgt_pos(trgt)
+        return self.decoder(trgt,encoder_output,src_mask,trgt_mask)
+    
+    def project(self,x):
+        return self.projection_layer(x)
+
+
+
+    
+
