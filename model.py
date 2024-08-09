@@ -33,10 +33,9 @@ class PositionalEncoding(nn.Module):
         # A matrix of shape(seq_len,d_model)
         pe = torch.zeros(seq_len, d_model)
         # Represents position of the word in sentence, vector of shape(seq_len,1)
-        position = torch.arrange(0, seq_len, dtype=torch.float).unsqueeze(1)
+        position = torch.arange(0, seq_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(
-            torch.arrange(0, d_model, 2).float()
-            * (-math.log(10000.0) / d_model)
+            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
         )
 
         # apply sin to even position and cos to odd.
@@ -50,7 +49,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x + (self.pe[:, : x.shape[1], :]).requries_grad_(False)
+        x = x + (self.pe[:, : x.shape[1], :]).requires_grad_(False)
         return self.dropout(x)
 
 
@@ -143,7 +142,7 @@ class ResidualConnection(nn.Module):
 
     def __init__(self, dropout: float) -> None:
         super().__init__()
-        self.dropout = nn.Droput(dropout)
+        self.dropout = nn.Dropout(dropout)
         self.norm = LayerNormalization()
 
     def forward(self, x, sublayer):
@@ -165,7 +164,7 @@ class EncoderBlock(nn.Module):
             [ResidualConnection(dropout) for _ in range(2)]
         )
 
-    def forward(self, c, src_mask):
+    def forward(self, x, src_mask):
         x = self.residual_connections[0](
             x, lambda x: self.self_attention(x, x, x, src_mask)
         )
