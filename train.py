@@ -106,43 +106,29 @@ def get_model(config, vocab_src_len, vocab_trgt_len):
     return model
 
 
-def greedy_decode(
-    model,
-    encoder_input,
-    encoder_mask,
-    src_tokenizer,
-    trgt_tokenizer,
-    max_len,
-    device,
-):
-    sos_idx = trgt_tokenizer.token_to_id('[SOS]')
-    eos_idx = trgt_tokenizer.token_to_id('[EOS]')
+def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device):
+    sos_idx = tokenizer_tgt.token_to_id('[SOS]')
+    eos_idx = tokenizer_tgt.token_to_id('[EOS]')
 
-    encoder_output = model.encode(encoder_input, encoder_mask)
-    decoder_input = (
-        torch.empty(1, 1).fill_(sos_idx).type_as(encoder_input).to(device)
-    )
+    # Precompute the encoder output and reuse it for every step
+    encoder_output = model.encode(source, source_mask)
+    # Initialize the decoder input with the sos token
+    decoder_input = torch.empty(1, 1).fill_(sos_idx).type_as(source).to(device)
     while True:
-        if decoder_input.size() == max_len:
+        if decoder_input.size(1) == max_len:
             break
 
-        decoder_mask = (
-            causal_mask(decoder_input.size(1)).type_as(encoder_mask).to(device)
-        )
-        out = model.decode(
-            encoder_output, encoder_mask, decoder_input, decoder_mask
-        )
+        # build mask for target
+        decoder_mask = causal_mask(decoder_input.size(1)).type_as(source_mask).to(device)
+
+        # calculate output
+        out = model.decode(encoder_output, source_mask, decoder_input, decoder_mask)
+
+        # get next token
         prob = model.project(out[:, -1])
         _, next_word = torch.max(prob, dim=1)
         decoder_input = torch.cat(
-            [
-                decoder_input,
-                torch.empty(1, 1)
-                .type_as(encoder_input)
-                .fill_(next_word.item())
-                .to(device),
-            ],
-            dim=1,
+            [decoder_input, torch.empty(1, 1).type_as(source).fill_(next_word.item()).to(device)], dim=1
         )
 
         if next_word == eos_idx:
