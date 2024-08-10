@@ -106,7 +106,9 @@ def get_model(config, vocab_src_len, vocab_trgt_len):
     return model
 
 
-def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device):
+def greedy_decode(
+    model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device
+):
     sos_idx = tokenizer_tgt.token_to_id('[SOS]')
     eos_idx = tokenizer_tgt.token_to_id('[EOS]')
 
@@ -119,16 +121,27 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
             break
 
         # build mask for target
-        decoder_mask = causal_mask(decoder_input.size(1)).type_as(source_mask).to(device)
+        decoder_mask = (
+            causal_mask(decoder_input.size(1)).type_as(source_mask).to(device)
+        )
 
         # calculate output
-        out = model.decode(encoder_output, source_mask, decoder_input, decoder_mask)
+        out = model.decode(
+            encoder_output, source_mask, decoder_input, decoder_mask
+        )
 
         # get next token
         prob = model.project(out[:, -1])
         _, next_word = torch.max(prob, dim=1)
         decoder_input = torch.cat(
-            [decoder_input, torch.empty(1, 1).type_as(source).fill_(next_word.item()).to(device)], dim=1
+            [
+                decoder_input,
+                torch.empty(1, 1)
+                .type_as(source)
+                .fill_(next_word.item())
+                .to(device),
+            ],
+            dim=1,
         )
 
         if next_word == eos_idx:
@@ -298,20 +311,19 @@ def train_model(config):
             optimizer.step()
             optimizer.zero_grad()
 
-            run_validation(
-                model,
-                val_dataloader,
-                src_tokenizer,
-                trgt_tokenizer,
-                config['seq_len'],
-                device,
-                lambda msg: batch_iterator.write(msg),
-                global_step,
-                writer,
-            )
-
             global_step += 1
-
+            
+        run_validation(
+            model,
+            val_dataloader,
+            src_tokenizer,
+            trgt_tokenizer,
+            config['seq_len'],
+            device,
+            lambda msg: batch_iterator.write(msg),
+            global_step,
+            writer,
+        )
         model_filename = get_weights_file_path(config, f'{epoch:02d}')
         torch.save(
             {
