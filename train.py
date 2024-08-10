@@ -312,7 +312,7 @@ def train_model(config):
             optimizer.zero_grad()
 
             global_step += 1
-            
+
         run_validation(
             model,
             val_dataloader,
@@ -330,7 +330,7 @@ def train_model(config):
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'global_step': global_Step,
+                'global_step': global_step,
             },
             model_filename,
         )
