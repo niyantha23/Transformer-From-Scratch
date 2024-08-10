@@ -4,5 +4,6 @@ A comprehensive implementation of the Transformer architecture from the ground u
 In addition to the model architecture, this repository also includes fully implemented training and validation loops, allowing you to train the Transformer model on real-world datasets. As a demonstration of its capabilities, the model is applied to the OPUS Books dataset for language translation, showcasing the potential of Transformers in machine translation tasks.
 
 This project is an ideal resource for anyone looking to gain a deeper understanding of Transformers by building and experimenting with the model from scratch.
+
 References:
 Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is All You Need. Advances in Neural Information Processing Systems, 30.
